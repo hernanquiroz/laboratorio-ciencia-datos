@@ -1,27 +1,27 @@
-[README.md](https://github.com/user-attachments/files/34525342/README.md)
-# Laboratorio de Ciencia de Datos — versión 0.3.1
+[README.md](https://github.com/user-attachments/files/34638931/README.md)
 
-## Correcciones y novedades
-- SQL: valida que se ejecute una sola sentencia por vez; incluye ejemplos seleccionables para evitar el error del parser al pegar varios SELECT juntos.
-- Incluye pestaña de ciclo de vida y limpieza: diagnóstico, espacios, cadenas vacías, duplicados, valores faltantes, detección/recorte IQR y bitácora.
-- Conserva el CSV original y aplica acciones a una copia de trabajo; permite restaurarla.
-- Incluye un CSV sintético didáctico de cambio climático (no son mediciones reales ni el archivo original del usuario).
-- Perfil estadístico, correlaciones, gráficos, DuckDB y exportación CSV/Parquet/JSON.
+# Laboratorio de Ciencia de Datos — versión 0.3.2
 
-## Instalación local
-```bash
-pip install -r requirements.txt
-streamlit run app.py
+## Cambios
+- Interfaz de fondo violeta suave/lavanda con superficies claras.
+- Crédito lateral: **Diseño Ing. Hernán Quiroz**.
+- Resolución de rutas en `read_csv_auto('nombre.csv')` y `read_csv('nombre.csv')` para archivos guardados en la biblioteca.
+- Consultas SQL de ejemplo y recomendación de usar la tabla `datos`, que ya contiene el archivo activo.
+- Mantiene el ciclo de vida, perfilado, limpieza sobre copia, bitácora y exportaciones.
+
+## Ejemplos SQL
+```sql
+SELECT * FROM datos LIMIT 10;
+SELECT COUNT(*) AS total_registros FROM datos;
+DESCRIBE datos;
 ```
 
-## GitHub / Streamlit
+## Actualización
 1. Descomprime el ZIP.
-2. Reemplaza `app.py` y `requirements.txt` en el repositorio.
-3. Sube también `README.md` y el contenido de `data/`.
-4. Haz commit y espera el despliegue.
+2. Reemplaza `app.py`, `requirements.txt` y `README.md` en GitHub.
+3. Conserva la carpeta `data/` y sus archivos.
+4. Haz commit y espera el redeploy.
 
-## Archivo de cambio climático
-`data/ejemplo_cambio_climatico_sintetico.csv` es un conjunto generado para probar la aplicación. No sustituye el CSV original que el usuario había cargado. Ese archivo original no apareció entre los archivos disponibles en esta conversación/biblioteca; debe volver a cargarse para integrarlo como fuente real.
-
-## Persistencia
-Los CSV de `data/csv_guardados/` se guardan en el disco local de la instancia. Streamlit Community Cloud no garantiza persistencia tras reinicios o redeploys. Para almacenamiento duradero se requiere conectar almacenamiento externo y guardar credenciales en Secrets. No publiques datos personales en un repositorio público.
+## Nota
+La forma recomendada de consultar el CSV activo es usar `FROM datos`, sin ruta de archivo.
+El disco local de Streamlit Community Cloud no garantiza persistencia entre reinicios.
