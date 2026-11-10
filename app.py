@@ -13,16 +13,24 @@ DEMO=ROOT/'data'/'ejemplo_cambio_climatico_sintetico.csv'
 STORE.mkdir(parents=True,exist_ok=True)
 st.set_page_config(page_title='Laboratorio de Ciencia de Datos',page_icon='🔬',layout='wide')
 st.markdown("""<style>
-.stApp{background:#F5F8F7;color:#263A45}[data-testid="stSidebar"]{background:#EDF4F1;border-right:1px solid #DCE8E3}
-.block-container{max-width:1500px;padding-top:1.5rem}h1,h2,h3{color:#263A45;letter-spacing:-.02em}
-[data-testid="stMetric"]{background:white;border:1px solid #DFE9E5;border-radius:14px;padding:14px}
-[data-testid="stMetricValue"]{color:#267C78}.stButton>button,.stDownloadButton>button{border-radius:10px;border:1px solid #B9D7CF;background:#F8FCFA;color:#246762}
-.stButton>button[kind="primary"]{background:#267C78;color:white}[data-testid="stTabs"] button[aria-selected="true"]{color:#267C78;border-bottom-color:#267C78}
-.hero{background:linear-gradient(115deg,#E5F2EC,#EAF2F7);border:1px solid #D9E8E2;border-radius:17px;padding:20px 24px;margin-bottom:16px}
-.hero p{color:#58717A;margin:0}
+.stApp{background:#F7F4FB;color:#302B3D}
+[data-testid="stSidebar"]{background:#F0EAF8;border-right:1px solid #E2D8EF}
+.block-container{max-width:1500px;padding-top:1.5rem}
+h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
+[data-testid="stMetric"]{background:#FFFFFF;border:1px solid #E7DFF0;border-radius:14px;padding:14px}
+[data-testid="stMetricValue"]{color:#7860A8}
+[data-testid="stMetricLabel"]{color:#756C82}
+.stButton>button,.stDownloadButton>button{border-radius:10px;border:1px solid #D4C5E8;background:#FBF9FE;color:#5F4B83}
+.stButton>button[kind="primary"]{background:#7860A8;color:white;border-color:#7860A8}
+[data-testid="stTabs"] button[aria-selected="true"]{color:#7860A8;border-bottom-color:#7860A8}
+.hero{background:linear-gradient(115deg,#EEE7F8,#F1ECFA);border:1px solid #E0D5EF;border-radius:17px;padding:20px 24px;margin-bottom:16px}
+.hero p{color:#6D627D;margin:0}
+[data-testid="stAlert"]{border-radius:12px}
+.credit{position:fixed;bottom:18px;left:18px;font-size:12px;color:#766A88;background:#F8F5FC;border:1px solid #DED4EB;border-radius:10px;padding:7px 11px;z-index:999}
 </style>""",unsafe_allow_html=True)
 st.title('🔬 Laboratorio de Ciencia de Datos')
-st.caption('Prototipo 0.3.1 · Corrección SQL + ciclo de vida y limpieza de datos + DuckDB')
+st.markdown('<div class="credit">Diseño Ing. Hernán Quiroz</div>', unsafe_allow_html=True)
+st.caption('Prototipo 0.3.2 · SQL DuckDB corregido · interfaz violeta')
 st.markdown('<div class="hero"><h3>De los datos originales al conocimiento</h3><p>Conserva la fuente original, revisa su calidad, documenta la limpieza y analiza una copia de trabajo.</p></div>',unsafe_allow_html=True)
 
 def read_csv(raw):
@@ -55,6 +63,35 @@ def sql_single_statement(q):
         raise ValueError('Ejecuta una sola consulta SQL por vez. Se detectaron '+str(len(statements))+' sentencias. Selecciona una consulta de ejemplo o deja solo un SELECT en el editor.')
     return statements[0]
 
+def resolve_csv_paths_in_sql(query, active_path, active_original_name, store_dir):
+    """Resuelve nombres CSV a rutas reales de la biblioteca local."""
+    pattern = re.compile(r"(?i)(read_csv_auto|read_csv)\s*\(\s*(['\"])(.*?)\2")
+    def replace_path(match):
+        function, quote, requested = match.group(1), match.group(2), match.group(3)
+        req = Path(requested)
+        if req.is_absolute() and req.exists():
+            resolved = req
+        else:
+            candidates = []
+            direct = store_dir / req.name
+            if direct.exists():
+                candidates.append(direct)
+            if req.name == Path(active_original_name).name or req.name == active_path.name:
+                candidates.append(active_path)
+            wanted = safe_stem(req.name).lower()
+            for candidate in store_dir.glob("*.csv"):
+                if safe_stem(candidate.name).lower().startswith(wanted):
+                    candidates.append(candidate)
+            resolved = next((p for p in candidates if p.exists()), None)
+            if resolved is None:
+                raise FileNotFoundError(
+                    f"No se encontró '{requested}'. Archivo activo: '{active_path.name}'. "
+                    "Usa la tabla `datos` (recomendado) o selecciona el CSV correcto."
+                )
+        escaped = str(resolved.resolve()).replace("'", "''")
+        return f"{function}({quote}{escaped}{quote}"
+    return pattern.sub(replace_path, query)
+
 con=duckdb.connect(database=':memory:')
 with st.sidebar:
     st.header('1. Biblioteca de archivos')
@@ -76,9 +113,9 @@ with st.sidebar:
     st.caption('data/csv_guardados/')
 
 try:
-    if up is not None: active=saved.name; original=read_csv(raw); source_kind='Archivo recién cargado'
-    elif use_demo: active=DEMO.name; original=pd.read_csv(DEMO); source_kind='Ejemplo sintético incluido'
-    elif selected is not None: active=selected.name; original=read_csv(selected.read_bytes()); source_kind='Biblioteca local'
+    if up is not None: active=saved.name; active_path=saved; active_original_name=up.name; original=read_csv(raw); source_kind='Archivo recién cargado'
+    elif use_demo: active=DEMO.name; active_path=DEMO; active_original_name=DEMO.name; original=pd.read_csv(DEMO); source_kind='Ejemplo sintético incluido'
+    elif selected is not None: active=selected.name; active_path=selected; active_original_name=selected.name; original=read_csv(selected.read_bytes()); source_kind='Biblioteca local'
     else: st.info('Carga un CSV o activa el ejemplo sintético de cambio climático.'); st.stop()
     if original.shape[1]==0: raise ValueError('El CSV no contiene columnas.')
     original.columns=[str(c).strip() or f'columna_{i+1}' for i,c in enumerate(original.columns)]
@@ -182,17 +219,33 @@ with tabs[4]:
     else: st.info('No hay variables numéricas.')
 with tabs[5]:
     st.subheader('Consultas SQL con DuckDB')
-    st.caption('La tabla se llama `datos`. Ejecuta una sentencia por vez. El editor no ejecuta automáticamente varias consultas pegadas.')
-    examples={'Primeras 10 filas':'SELECT * FROM datos LIMIT 10','Contar registros':'SELECT COUNT(*) AS total_registros FROM datos','Ver columnas y tipos':'DESCRIBE datos','Promedio de una variable (ejemplo climático)':'SELECT AVG(temperatura_media_C) AS temperatura_media FROM datos'}
+    st.caption('La tabla `datos` ya contiene el archivo activo. Consulta esta tabla sin indicar rutas.')
+    examples={
+        'Primeras 10 filas':'SELECT * FROM datos LIMIT 10',
+        'Contar registros':'SELECT COUNT(*) AS total_registros FROM datos',
+        'Ver columnas y tipos':'DESCRIBE datos',
+        'Leer el CSV activo por ruta (compatibilidad)':'SELECT * FROM read_csv_auto(\'ARCHIVO_ACTIVO.csv\') LIMIT 10'
+    }
     ex=st.selectbox('Cargar consulta de ejemplo',list(examples),key='sql_example')
-    sql=st.text_area('Consulta SQL',examples[ex],height=130,key='sql_editor')
+    default_sql=examples[ex]
+    if ex=='Leer el CSV activo por ruta (compatibilidad)':
+        default_sql=f"SELECT * FROM read_csv_auto('{active_original_name.replace(chr(39), chr(39)*2)}') LIMIT 10"
+    sql=st.text_area('Consulta SQL',default_sql,height=145,key='sql_editor')
+    st.caption('Recomendación: usa `FROM datos`. Si utilizas `read_csv_auto(\'nombre.csv\')`, se intentará localizar el archivo en la biblioteca y resolver su ruta.')
     if st.button('▶ Ejecutar consulta',type='primary'):
         try:
-            statement=sql_single_statement(sql); result=con.execute(statement).fetchdf(); st.session_state['sql_result']=result; st.session_state['sql_error']=None
-        except Exception as e: st.session_state['sql_error']=str(e)
-    if st.session_state.get('sql_error'): st.error('No se pudo ejecutar la consulta: '+st.session_state['sql_error'])
+            statement=sql_single_statement(sql)
+            statement=resolve_csv_paths_in_sql(statement,active_path,active_original_name,STORE)
+            result=con.execute(statement).fetchdf()
+            st.session_state['sql_result']=result
+            st.session_state['sql_error']=None
+        except Exception as e:
+            st.session_state['sql_error']=str(e)
+    if st.session_state.get('sql_error'):
+        st.error('No se pudo ejecutar la consulta: '+st.session_state['sql_error'])
     if 'sql_result' in st.session_state:
-        st.dataframe(st.session_state['sql_result'],use_container_width=True); st.download_button('Descargar resultado SQL',st.session_state['sql_result'].to_csv(index=False).encode('utf-8-sig'),'resultado_sql.csv','text/csv')
+        st.dataframe(st.session_state['sql_result'],use_container_width=True)
+        st.download_button('Descargar resultado SQL',st.session_state['sql_result'].to_csv(index=False).encode('utf-8-sig'),'resultado_sql.csv','text/csv')
 with tabs[6]:
     st.subheader('Archivos y exportación')
     inv=sorted(STORE.glob('*.csv'),key=lambda p:p.stat().st_mtime,reverse=True)
@@ -200,6 +253,6 @@ with tabs[6]:
     else: st.info('No hay archivos CSV guardados por el usuario.')
     st.download_button('Exportar copia de trabajo CSV',clean.to_csv(index=False).encode('utf-8-sig'),'datos_trabajo.csv','text/csv')
     pb=io.BytesIO(); clean.to_parquet(pb,index=False); st.download_button('Exportar copia de trabajo Parquet',pb.getvalue(),'datos_trabajo.parquet','application/octet-stream')
-    report={'version':'0.3.1','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
+    report={'version':'0.3.2','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
     st.download_button('Exportar informe JSON',json.dumps(report,ensure_ascii=False,indent=2).encode('utf-8'),'informe_calidad_limpieza.json','application/json')
-st.divider(); st.caption('Prototipo 0.3.1 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
+st.divider(); st.caption('Prototipo 0.3.2 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
