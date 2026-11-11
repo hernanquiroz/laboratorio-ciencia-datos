@@ -93,30 +93,85 @@ def resolve_csv_paths_in_sql(query, active_path, active_original_name, store_dir
     return pattern.sub(replace_path, query)
 
 con=duckdb.connect(database=':memory:')
+def delete_selected_csv():
+    # Callback ejecutado antes de que Streamlit vuelva a renderizar la aplicación.
+    filename = st.session_state.get('saved_csv_choice')
+    if not filename:
+        st.session_state['file_admin_message'] = ('error', 'No hay un archivo seleccionado.')
+        return
+    target = (STORE / Path(filename).name).resolve()
+    if target.parent != STORE.resolve() or not target.is_file():
+        st.session_state['file_admin_message'] = ('error', 'El archivo seleccionado ya no existe o no es válido.')
+        return
+
+    # Si el cargador todavía conserva exactamente ese archivo, no permitir
+    # que el rerun lo vuelva a crear inmediatamente después de borrarlo.
+    pending_upload = st.session_state.get('csv_uploader')
+    if pending_upload is not None:
+        pending_hash = hashlib.sha256(pending_upload.getvalue()).hexdigest()[:10]
+        if target.name.endswith(f'_{pending_hash}.csv'):
+            st.session_state['deleted_upload_hash'] = pending_hash
+
+    target.unlink()
+    st.session_state.pop('active_source', None)
+    st.session_state.pop('clean_df', None)
+    st.session_state.pop('clean_log', None)
+    st.session_state['file_admin_message'] = ('success', f'Archivo eliminado: {target.name}')
+
 with st.sidebar:
     st.header('1. Biblioteca de archivos')
-    up=st.file_uploader('Añadir CSV',type=['csv'])
+    up=st.file_uploader('Añadir CSV',type=['csv'],key='csv_uploader')
+
+    raw=None
+    saved=None
+    upload_is_deleted=False
     if up is not None:
-        raw=up.getvalue(); digest=hashlib.sha256(raw).hexdigest()[:10]
-        saved=STORE/f'{safe_stem(up.name)}_{digest}.csv'
-        if not saved.exists(): saved.write_bytes(raw)
-        st.success(f'Guardado: {saved.name}')
+        raw=up.getvalue()
+        digest=hashlib.sha256(raw).hexdigest()[:10]
+        if st.session_state.get('deleted_upload_hash') == digest:
+            upload_is_deleted=True
+            st.caption('Este archivo fue eliminado. Para volver a incorporarlo, carga otro archivo y después selecciónalo nuevamente.')
+        else:
+            saved=STORE/f'{safe_stem(up.name)}_{digest}.csv'
+            if not saved.exists():
+                saved.write_bytes(raw)
+            st.success(f'Guardado: {saved.name}')
+
+    admin_message=st.session_state.pop('file_admin_message',None)
+    if admin_message:
+        kind, message=admin_message
+        if kind=='success': st.success(message)
+        else: st.error(message)
+
     st.markdown('**Conjunto didáctico incluido**')
     use_demo=st.checkbox('Cargar ejemplo de cambio climático (sintético)',value=False,help='Datos simulados para probar el flujo. No son mediciones reales ni el CSV original que habías utilizado.')
     available=sorted(STORE.glob('*.csv'),key=lambda p:p.stat().st_mtime,reverse=True)
     if available:
-        choice=st.selectbox('Volver a abrir un CSV guardado',[p.name for p in available])
+        names=[p.name for p in available]
+        current=st.session_state.get('saved_csv_choice')
+        if current not in names:
+            current=names[0]
+        choice=st.selectbox('Volver a abrir un CSV guardado',names,index=names.index(current),key='saved_csv_choice')
         selected=STORE/choice
-        if st.button('Eliminar archivo seleccionado',use_container_width=True): selected.unlink(missing_ok=True); st.rerun()
-    else: selected=None
-    st.divider(); st.caption(f'{len(available)} archivo(s) guardados')
+        st.button('Eliminar archivo seleccionado',use_container_width=True,on_click=delete_selected_csv)
+    else:
+        selected=None
+        st.caption('La biblioteca está vacía.')
+    st.divider()
+    st.caption(f'{len(available)} archivo(s) guardados')
     st.caption('data/csv_guardados/')
 
+# Si el archivo cargado se acaba de eliminar, no lo tratamos como fuente activa.
+if upload_is_deleted:
+    up=None
+    raw=None
+    saved=None
+
 try:
-    if up is not None: active=saved.name; active_path=saved; active_original_name=up.name; original=read_csv(raw); source_kind='Archivo recién cargado'
+    if up is not None and saved is not None: active=saved.name; active_path=saved; active_original_name=up.name; original=read_csv(raw); source_kind='Archivo recién cargado'
     elif use_demo: active=DEMO.name; active_path=DEMO; active_original_name=DEMO.name; original=pd.read_csv(DEMO); source_kind='Ejemplo sintético incluido'
-    elif selected is not None: active=selected.name; active_path=selected; active_original_name=selected.name; original=read_csv(selected.read_bytes()); source_kind='Biblioteca local'
-    else: st.info('Carga un CSV o activa el ejemplo sintético de cambio climático.'); st.stop()
+    elif selected is not None and selected.exists(): active=selected.name; active_path=selected; active_original_name=selected.name; original=read_csv(selected.read_bytes()); source_kind='Biblioteca local'
+    else: st.info('Carga un CSV, selecciona otro archivo guardado o activa el ejemplo sintético de cambio climático.'); st.stop()
     if original.shape[1]==0: raise ValueError('El CSV no contiene columnas.')
     original.columns=[str(c).strip() or f'columna_{i+1}' for i,c in enumerate(original.columns)]
     seen={}; names=[]
@@ -256,3 +311,4 @@ with tabs[6]:
     report={'version':'0.3.2','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
     st.download_button('Exportar informe JSON',json.dumps(report,ensure_ascii=False,indent=2).encode('utf-8'),'informe_calidad_limpieza.json','application/json')
 st.divider(); st.caption('Prototipo 0.3.2 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
+
