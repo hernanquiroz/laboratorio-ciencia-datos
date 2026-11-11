@@ -1,18 +1,24 @@
-[README.md](https://github.com/user-attachments/files/34695843/README.md)
+[README.md](https://github.com/user-attachments/files/34696190/README.md)
 
-# Laboratorio de Ciencia de Datos — versión 0.3.3
+# Laboratorio de Ciencia de Datos — versión 0.3.4
 
-## Corrección de administración de archivos
-- El botón de eliminación ahora usa un callback de Streamlit.
-- Se elimina únicamente el archivo seleccionado en la biblioteca.
-- La lista se actualiza en el rerun posterior.
-- Se evita que el contenido que permanece en `file_uploader` vuelva a crear automáticamente el CSV recién eliminado.
-- Se invalidan los datos de trabajo en sesión cuando se elimina la fuente activa.
-- Se mantienen el diseño violeta, DuckDB, análisis, limpieza y exportaciones de la versión 0.3.2.
+## Cambios de presentación
+- Fondo general violeta más profundo, en una tonalidad lavanda/plum suave.
+- Barra lateral con violeta más marcado.
+- Paneles y tarjetas claros para conservar contraste y legibilidad.
+- Crédito visible: **Diseño: Ing. Hernán Quiroz**.
 
-## Instalación
-Reemplaza `app.py` y `README.md` en GitHub. No cambies `requirements.txt` ni borres `data/`.
-Haz commit y espera el redeploy de Streamlit.
+## Funcionalidad
+Esta actualización conserva las funciones verificadas de la versión 0.3.3:
+- Carga, biblioteca y eliminación de archivos CSV.
+- Consultas SQL con DuckDB.
+- Perfil estadístico, limpieza, correlaciones y gráficos.
+- Exportación de resultados.
 
-## Nota sobre el cargador
-Si eliminas el mismo archivo que sigue visible en el cargador, la aplicación lo ignora para evitar recrearlo. Para volver a añadir ese mismo CSV, carga primero otro archivo y luego vuelve a seleccionar el CSV deseado.
+## Actualización en GitHub
+1. Descomprime el ZIP.
+2. Reemplaza `app.py` y `README.md` en el repositorio.
+3. Conserva `requirements.txt` y la carpeta `data/`, incluidos tus CSV.
+4. Haz Commit y espera el redeploy de Streamlit.
+
+Esta versión modifica únicamente la presentación visual, el texto del crédito y las etiquetas de versión. No cambia la lógica de administración de archivos ni las consultas SQL.
