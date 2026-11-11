@@ -1,26 +1,18 @@
-[README.md](https://github.com/user-attachments/files/34694696/README.md)
-# Laboratorio de Ciencia de Datos — versión 0.3.2
+[README.md](https://github.com/user-attachments/files/34695843/README.md)
 
-## Cambios
-- Interfaz de fondo violeta suave/lavanda con superficies claras.
-- Crédito lateral: **Diseño Ing. Hernán Quiroz**.
-- Resolución de rutas en `read_csv_auto('nombre.csv')` y `read_csv('nombre.csv')` para archivos guardados en la biblioteca.
-- Consultas SQL de ejemplo y recomendación de usar la tabla `datos`, que ya contiene el archivo activo.
-- Mantiene el ciclo de vida, perfilado, limpieza sobre copia, bitácora y exportaciones.
+# Laboratorio de Ciencia de Datos — versión 0.3.3
 
-## Ejemplos SQL
-```sql
-SELECT * FROM datos LIMIT 10;
-SELECT COUNT(*) AS total_registros FROM datos;
-DESCRIBE datos;
-```
+## Corrección de administración de archivos
+- El botón de eliminación ahora usa un callback de Streamlit.
+- Se elimina únicamente el archivo seleccionado en la biblioteca.
+- La lista se actualiza en el rerun posterior.
+- Se evita que el contenido que permanece en `file_uploader` vuelva a crear automáticamente el CSV recién eliminado.
+- Se invalidan los datos de trabajo en sesión cuando se elimina la fuente activa.
+- Se mantienen el diseño violeta, DuckDB, análisis, limpieza y exportaciones de la versión 0.3.2.
 
-## Actualización
-1. Descomprime el ZIP.
-2. Reemplaza `app.py`, `requirements.txt` y `README.md` en GitHub.
-3. Conserva la carpeta `data/` y sus archivos.
-4. Haz commit y espera el redeploy.
+## Instalación
+Reemplaza `app.py` y `README.md` en GitHub. No cambies `requirements.txt` ni borres `data/`.
+Haz commit y espera el redeploy de Streamlit.
 
-## Nota
-La forma recomendada de consultar el CSV activo es usar `FROM datos`, sin ruta de archivo.
-El disco local de Streamlit Community Cloud no garantiza persistencia entre reinicios.
+## Nota sobre el cargador
+Si eliminas el mismo archivo que sigue visible en el cargador, la aplicación lo ignora para evitar recrearlo. Para volver a añadir ese mismo CSV, carga primero otro archivo y luego vuelve a seleccionar el CSV deseado.
