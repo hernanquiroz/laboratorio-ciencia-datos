@@ -13,8 +13,8 @@ DEMO=ROOT/'data'/'ejemplo_cambio_climatico_sintetico.csv'
 STORE.mkdir(parents=True,exist_ok=True)
 st.set_page_config(page_title='Laboratorio de Ciencia de Datos',page_icon='🔬',layout='wide')
 st.markdown("""<style>
-.stApp{background:#F7F4FB;color:#302B3D}
-[data-testid="stSidebar"]{background:#F0EAF8;border-right:1px solid #E2D8EF}
+.stApp{background:#E9E0F1;color:#302B3D}
+[data-testid="stSidebar"]{background:#DCCDE9;border-right:1px solid #CBB9DD}
 .block-container{max-width:1500px;padding-top:1.5rem}
 h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
 [data-testid="stMetric"]{background:#FFFFFF;border:1px solid #E7DFF0;border-radius:14px;padding:14px}
@@ -23,14 +23,14 @@ h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
 .stButton>button,.stDownloadButton>button{border-radius:10px;border:1px solid #D4C5E8;background:#FBF9FE;color:#5F4B83}
 .stButton>button[kind="primary"]{background:#7860A8;color:white;border-color:#7860A8}
 [data-testid="stTabs"] button[aria-selected="true"]{color:#7860A8;border-bottom-color:#7860A8}
-.hero{background:linear-gradient(115deg,#EEE7F8,#F1ECFA);border:1px solid #E0D5EF;border-radius:17px;padding:20px 24px;margin-bottom:16px}
-.hero p{color:#6D627D;margin:0}
+.hero{background:linear-gradient(115deg,#EEE7F8,#F1ECFA);border:1px solid #CDBBDF;border-radius:17px;padding:20px 24px;margin-bottom:16px}
+.hero p{color:#5F536F;margin:0}
 [data-testid="stAlert"]{border-radius:12px}
-.credit{position:fixed;bottom:18px;left:18px;font-size:12px;color:#766A88;background:#F8F5FC;border:1px solid #DED4EB;border-radius:10px;padding:7px 11px;z-index:999}
+.credit{position:fixed;bottom:18px;left:18px;font-size:12px;font-weight:600;color:#514365;background:#F3EDF8;border:1px solid #CBB9DD;border-radius:10px;padding:8px 12px;z-index:999;box-shadow:0 2px 8px rgba(62,42,83,.08)}
 </style>""",unsafe_allow_html=True)
 st.title('🔬 Laboratorio de Ciencia de Datos')
-st.markdown('<div class="credit">Diseño Ing. Hernán Quiroz</div>', unsafe_allow_html=True)
-st.caption('Prototipo 0.3.2 · SQL DuckDB corregido · interfaz violeta')
+st.markdown('<div class="credit">Diseño: Ing. Hernán Quiroz</div>', unsafe_allow_html=True)
+st.caption('Prototipo 0.3.4 · interfaz violeta profundo')
 st.markdown('<div class="hero"><h3>De los datos originales al conocimiento</h3><p>Conserva la fuente original, revisa su calidad, documenta la limpieza y analiza una copia de trabajo.</p></div>',unsafe_allow_html=True)
 
 def read_csv(raw):
@@ -310,5 +310,4 @@ with tabs[6]:
     pb=io.BytesIO(); clean.to_parquet(pb,index=False); st.download_button('Exportar copia de trabajo Parquet',pb.getvalue(),'datos_trabajo.parquet','application/octet-stream')
     report={'version':'0.3.2','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
     st.download_button('Exportar informe JSON',json.dumps(report,ensure_ascii=False,indent=2).encode('utf-8'),'informe_calidad_limpieza.json','application/json')
-st.divider(); st.caption('Prototipo 0.3.2 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
-
+st.divider(); st.caption('Prototipo 0.3.4 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
