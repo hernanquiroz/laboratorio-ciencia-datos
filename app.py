@@ -29,6 +29,7 @@ h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
 .credit{position:fixed;bottom:18px;left:18px;font-size:12px;font-weight:600;color:#514365;background:#F3EDF8;border:1px solid #CBB9DD;border-radius:10px;padding:8px 12px;z-index:999;box-shadow:0 2px 8px rgba(62,42,83,.08)}
 </style>""",unsafe_allow_html=True)
 st.title('🔬 Laboratorio de Ciencia de Datos')
+st.caption("Diseño: Ing. Hernán Quiroz")
 st.markdown('<div class="credit">Diseño: Ing. Hernán Quiroz</div>', unsafe_allow_html=True)
 st.caption('Prototipo 0.3.4 · interfaz violeta profundo')
 st.markdown('<div class="hero"><h3>De los datos originales al conocimiento</h3><p>Conserva la fuente original, revisa su calidad, documenta la limpieza y analiza una copia de trabajo.</p></div>',unsafe_allow_html=True)
@@ -119,6 +120,7 @@ def delete_selected_csv():
     st.session_state['file_admin_message'] = ('success', f'Archivo eliminado: {target.name}')
 
 with st.sidebar:
+    st.markdown("**Diseño: Ing. Hernán Quiroz**")
     st.header('1. Biblioteca de archivos')
     up=st.file_uploader('Añadir CSV',type=['csv'],key='csv_uploader')
 
