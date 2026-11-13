@@ -26,11 +26,9 @@ h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
 .hero{background:linear-gradient(115deg,#EEE7F8,#F1ECFA);border:1px solid #CDBBDF;border-radius:17px;padding:20px 24px;margin-bottom:16px}
 .hero p{color:#5F536F;margin:0}
 [data-testid="stAlert"]{border-radius:12px}
-.credit{position:fixed;bottom:18px;left:18px;font-size:12px;font-weight:600;color:#514365;background:#F3EDF8;border:1px solid #CBB9DD;border-radius:10px;padding:8px 12px;z-index:999;box-shadow:0 2px 8px rgba(62,42,83,.08)}
+
 </style>""",unsafe_allow_html=True)
 st.title('🔬 Laboratorio de Ciencia de Datos')
-st.caption("Diseño: Ing. Hernán Quiroz")
-st.markdown('<div class="credit">Diseño: Ing. Hernán Quiroz</div>', unsafe_allow_html=True)
 st.caption('Prototipo 0.3.4 · interfaz violeta profundo')
 st.markdown('<div class="hero"><h3>De los datos originales al conocimiento</h3><p>Conserva la fuente original, revisa su calidad, documenta la limpieza y analiza una copia de trabajo.</p></div>',unsafe_allow_html=True)
 
@@ -120,7 +118,6 @@ def delete_selected_csv():
     st.session_state['file_admin_message'] = ('success', f'Archivo eliminado: {target.name}')
 
 with st.sidebar:
-    st.markdown("**Diseño: Ing. Hernán Quiroz**")
     st.header('1. Biblioteca de archivos')
     up=st.file_uploader('Añadir CSV',type=['csv'],key='csv_uploader')
 
@@ -313,3 +310,200 @@ with tabs[6]:
     report={'version':'0.3.2','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
     st.download_button('Exportar informe JSON',json.dumps(report,ensure_ascii=False,indent=2).encode('utf-8'),'informe_calidad_limpieza.json','application/json')
 st.divider(); st.caption('Prototipo 0.3.4 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
+
+
+# ---------------- INFERENCIA ESTADÍSTICA / VERSIÓN 0.4.0 ----------------
+def render_hypothesis_module_v040():
+    import numpy as np
+    import pandas as pd
+    import streamlit as st
+    from scipy import stats
+
+    st.header("🧪 Pruebas de hipótesis")
+    st.caption("Inferencia estadística sobre el conjunto de datos activo.")
+    frame = None
+    for key in ("df", "df_activo", "dataframe", "datos_df", "datos"):
+        obj = st.session_state.get(key)
+        if isinstance(obj, pd.DataFrame) and not obj.empty:
+            frame = obj
+            break
+    if frame is None:
+        st.info("Carga un archivo CSV y activa sus datos para utilizar este módulo.")
+        return
+    nums = frame.select_dtypes(include=np.number).columns.tolist()
+    cols = frame.columns.tolist()
+    if not nums:
+        st.warning("El conjunto activo no contiene columnas numéricas.")
+        return
+
+    choice = st.selectbox("Prueba estadística", [
+        "t de Student: una muestra",
+        "t de Welch: dos muestras independientes",
+        "t de Student: muestras pareadas",
+        "ANOVA de un factor",
+        "Chi-cuadrado de independencia",
+        "Correlación de Pearson",
+        "Correlación de Spearman",
+        "Normalidad de Shapiro-Wilk",
+        "Mann-Whitney U",
+        "Wilcoxon de rangos con signo",
+    ], key="v040_hyp_test")
+    alpha = st.number_input("Nivel de significancia α", min_value=0.001, max_value=0.20,
+                            value=0.05, step=0.005, format="%.3f", key="v040_hyp_alpha")
+    alt_text = st.selectbox("Alternativa", ["Bilateral", "Mayor que", "Menor que"], key="v040_hyp_alt")
+    alt = {"Bilateral": "two-sided", "Mayor que": "greater", "Menor que": "less"}[alt_text]
+    sign = {"two-sided": "≠", "greater": ">", "less": "<"}[alt]
+
+    def vector(col):
+        return pd.to_numeric(frame[col], errors="coerce").dropna().astype(float).to_numpy()
+
+    def output(statname, stat, p, h0, h1, note="", dof=None):
+        a, b, c = st.columns(3)
+        a.metric("Estadístico", f"{stat:.6g}")
+        b.metric("Valor p", f"{p:.6g}")
+        c.metric("α", f"{alpha:.3f}")
+        if dof is not None:
+            st.write(f"**Grados de libertad:** {dof}")
+        st.write(f"**H₀:** {h0}")
+        st.write(f"**H₁:** {h1}")
+        if p < alpha:
+            st.success("Se rechaza H₀: existe evidencia estadística contra la hipótesis nula.")
+        else:
+            st.warning("No se rechaza H₀: evidencia insuficiente para rechazar la hipótesis nula.")
+        if note:
+            st.caption(note)
+        st.caption("El valor p no mide la magnitud del efecto ni demuestra causalidad.")
+
+    if choice == "t de Student: una muestra":
+        col = st.selectbox("Variable", nums, key="v040_one_col")
+        mu = st.number_input("Media hipotética bajo H₀", value=0.0, key="v040_mu")
+        x = vector(col)
+        if len(x) >= 2:
+            r = stats.ttest_1samp(x, mu, alternative=alt)
+            output("t", r.statistic, r.pvalue, f"μ = {mu}", f"μ {sign} {mu}",
+                   f"n={len(x)}. Requiere independencia y normalidad aproximada.")
+        else:
+            st.warning("Se requieren al menos 2 observaciones válidas.")
+
+    elif choice == "t de Welch: dos muestras independientes":
+        a, b = st.columns(2)
+        ca = a.selectbox("Muestra A", nums, key="v040_welch_a")
+        cb = b.selectbox("Muestra B", [x for x in nums if x != ca] or nums, key="v040_welch_b")
+        x, y = vector(ca), vector(cb)
+        if len(x) >= 2 and len(y) >= 2:
+            r = stats.ttest_ind(x, y, equal_var=False, alternative=alt)
+            output("t de Welch", r.statistic, r.pvalue, "μA = μB", f"μA {sign} μB",
+                   f"nA={len(x)}, nB={len(y)}. Muestras independientes; no exige igualdad de varianzas.")
+        else:
+            st.warning("Cada muestra necesita al menos 2 valores.")
+
+    elif choice == "t de Student: muestras pareadas":
+        a, b = st.columns(2)
+        ca = a.selectbox("Medición 1", nums, key="v040_pair_a")
+        cb = b.selectbox("Medición 2", [x for x in nums if x != ca] or nums, key="v040_pair_b")
+        pair = pd.DataFrame({"x": pd.to_numeric(frame[ca], errors="coerce"),
+                             "y": pd.to_numeric(frame[cb], errors="coerce")}).dropna()
+        if len(pair) >= 2:
+            r = stats.ttest_rel(pair.x, pair.y, alternative=alt)
+            output("t pareada", r.statistic, r.pvalue, "μd = 0", f"μd {sign} 0",
+                   f"{len(pair)} pares completos. Cada fila debe representar la misma unidad.")
+        else:
+            st.warning("Se requieren al menos 2 pares completos.")
+
+    elif choice == "ANOVA de un factor":
+        val = st.selectbox("Variable respuesta", nums, key="v040_anova_val")
+        grp = st.selectbox("Factor categórico", cols, key="v040_anova_grp")
+        arrays = []
+        for _, part in frame[[val, grp]].dropna().groupby(grp):
+            ar = pd.to_numeric(part[val], errors="coerce").dropna().to_numpy()
+            if len(ar) >= 2:
+                arrays.append(ar)
+        if len(arrays) >= 2:
+            r = stats.f_oneway(*arrays)
+            output("F", r.statistic, r.pvalue, "Todas las medias son iguales",
+                   "Al menos una media difiere",
+                   f"{len(arrays)} grupos. Supuestos: independencia, normalidad aproximada de residuos y homogeneidad de varianzas. Considera post hoc.")
+        else:
+            st.warning("Se necesitan al menos 2 grupos con 2 datos cada uno.")
+
+    elif choice == "Chi-cuadrado de independencia":
+        a, b = st.columns(2)
+        ca = a.selectbox("Variable categórica A", cols, key="v040_chi_a")
+        cb = b.selectbox("Variable categórica B", [x for x in cols if x != ca] or cols, key="v040_chi_b")
+        tab = pd.crosstab(frame[ca], frame[cb])
+        if tab.shape[0] >= 2 and tab.shape[1] >= 2:
+            r = stats.chi2_contingency(tab)
+            output("χ²", r.statistic, r.pvalue, "Las variables son independientes",
+                   "Existe asociación entre las variables",
+                   f"Tabla {tab.shape[0]}×{tab.shape[1]}; frecuencia esperada mínima={r.expected_freq.min():.3g}. Revise frecuencias esperadas.",
+                   r.dof)
+            with st.expander("Tabla de contingencia"):
+                st.dataframe(tab, use_container_width=True)
+        else:
+            st.warning("Cada variable debe tener al menos 2 categorías.")
+
+    elif choice in ("Correlación de Pearson", "Correlación de Spearman"):
+        a, b = st.columns(2)
+        ca = a.selectbox("Variable X", nums, key="v040_corr_x")
+        cb = b.selectbox("Variable Y", [x for x in nums if x != ca] or nums, key="v040_corr_y")
+        pair = pd.DataFrame({"x": pd.to_numeric(frame[ca], errors="coerce"),
+                             "y": pd.to_numeric(frame[cb], errors="coerce")}).dropna()
+        if len(pair) >= 3:
+            r = stats.pearsonr(pair.x, pair.y) if choice.endswith("Pearson") else stats.spearmanr(pair.x, pair.y)
+            output("r" if choice.endswith("Pearson") else "ρ", r.statistic, r.pvalue,
+                   "La correlación poblacional es 0", "La correlación poblacional no es 0",
+                   f"n={len(pair)}. Pearson mide asociación lineal; Spearman, asociación monótona.")
+        else:
+            st.warning("Se requieren al menos 3 pares completos.")
+
+    elif choice == "Normalidad de Shapiro-Wilk":
+        col = st.selectbox("Variable", nums, key="v040_shapiro")
+        x = vector(col)
+        if 3 <= len(x) <= 5000:
+            r = stats.shapiro(x)
+            output("W", r.statistic, r.pvalue, "Los datos siguen una distribución normal",
+                   "Los datos no siguen una distribución normal",
+                   f"n={len(x)}. Complementa con histograma o gráfico Q-Q.")
+        elif len(x) > 5000:
+            st.warning("Este módulo limita Shapiro-Wilk a 5000 observaciones.")
+        else:
+            st.warning("Se requieren al menos 3 observaciones.")
+
+    elif choice == "Mann-Whitney U":
+        a, b = st.columns(2)
+        ca = a.selectbox("Muestra A", nums, key="v040_mw_a")
+        cb = b.selectbox("Muestra B", [x for x in nums if x != ca] or nums, key="v040_mw_b")
+        x, y = vector(ca), vector(cb)
+        if len(x) and len(y):
+            r = stats.mannwhitneyu(x, y, alternative=alt)
+            output("U", r.statistic, r.pvalue, "Las distribuciones son iguales",
+                   "Las distribuciones difieren según la alternativa",
+                   f"nA={len(x)}, nB={len(y)}. Muestras independientes; la interpretación como diferencia de medianas exige formas comparables.")
+        else:
+            st.warning("Ambas muestras necesitan valores válidos.")
+
+    elif choice == "Wilcoxon de rangos con signo":
+        a, b = st.columns(2)
+        ca = a.selectbox("Medición 1", nums, key="v040_wil_a")
+        cb = b.selectbox("Medición 2", [x for x in nums if x != ca] or nums, key="v040_wil_b")
+        pair = pd.DataFrame({"x": pd.to_numeric(frame[ca], errors="coerce"),
+                             "y": pd.to_numeric(frame[cb], errors="coerce")}).dropna()
+        if len(pair) >= 2:
+            try:
+                r = stats.wilcoxon(pair.x, pair.y, alternative=alt)
+                h1 = {"two-sided": "la diferencia sistemática no es 0",
+                      "greater": "la diferencia sistemática es mayor que 0",
+                      "less": "la diferencia sistemática es menor que 0"}[alt]
+                output("W", r.statistic, r.pvalue, "La mediana de las diferencias es 0", h1,
+                       f"{len(pair)} pares completos. Requiere datos pareados y diferencias aproximadamente simétricas.")
+            except ValueError as exc:
+                st.warning(f"No se pudo calcular la prueba: {exc}")
+        else:
+            st.warning("Se requieren al menos 2 pares completos.")
+
+    st.info("Verifica que la estructura de los datos corresponda al diseño del estudio. Una selección incorrecta de muestras o pares invalida la conclusión.")
+
+
+st.markdown("---")
+render_hypothesis_module_v040()
+      
