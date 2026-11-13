@@ -1,4 +1,4 @@
-# Laboratorio de Ciencia de Datos â€” versiÃ³n 0.4.0
+# Laboratorio de Ciencia de Datos version 0.4.0
 
 ## Cambios de presentaciÃ³n
 - Fondo general violeta mÃ¡s profundo, en una tonalidad lavanda/plum suave.
