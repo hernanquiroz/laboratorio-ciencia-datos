@@ -1,8 +1,8 @@
 # Laboratorio de Ciencia de Datos ” versión 0.4.1
 
 ## Corrección principal
-- El módulo de inferencia recibe expli­citamente el mismo DataFrame `clean` que alimenta los demass módulos. Ya no busca claves de sesión (`df`, `datos_df`, etc.) que no existian, causa del mensaje â€œCarga un archivo CSV y activa sus datosâ€.
-- Se muestra una confirmaciÃ³n de conexiÃ³n con el nÃºmero de filas y variables.
+- El módulo de inferencia recibe expli­citamente el mismo DataFrame `clean` que alimenta los demass módulos. Ya no busca claves de sesión (`df`, `datos_df`, etc.) que no existian, causa del mensaje Carga un archivo CSV y activa sus datos.
+- Se muestra una confirmación de conexión con el número de filas y variables.
 
 ## Inferencia estadÃ­stica
 Se conservan las diez pruebas: t de Student para una muestra, t de Welch para muestras independientes, t de Student pareada, ANOVA, chi-cuadrado, Pearson, Spearman, Shapiro-Wilk, Mann-Whitney U y Wilcoxon.
