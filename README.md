@@ -4,7 +4,7 @@
 - El módulo de inferencia recibe expli­citamente el mismo DataFrame `clean` que alimenta los demass módulos. Ya no busca claves de sesión (`df`, `datos_df`, etc.) que no existian, causa del mensaje Carga un archivo CSV y activa sus datos.
 - Se muestra una confirmación de conexión con el número de filas y variables.
 
-## Inferencia estadÃ­stica
+## Inferencia estadÃística
 Se conservan las diez pruebas: t de Student para una muestra, t de Welch para muestras independientes, t de Student pareada, ANOVA, chi-cuadrado, Pearson, Spearman, Shapiro-Wilk, Mann-Whitney U y Wilcoxon.
 
 ## Validación de instrumentos
