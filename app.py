@@ -13,8 +13,8 @@ DEMO=ROOT/'data'/'ejemplo_cambio_climatico_sintetico.csv'
 STORE.mkdir(parents=True,exist_ok=True)
 st.set_page_config(page_title='Laboratorio de Ciencia de Datos',page_icon='🔬',layout='wide')
 st.markdown("""<style>
-.stApp{background:#E9E0F1;color:#302B3D}
-[data-testid="stSidebar"]{background:#DCCDE9;border-right:1px solid #CBB9DD}
+.stApp{background:#D8C9E8;color:#292336}
+[data-testid="stSidebar"]{background:#C7B2DC;border-right:1px solid #B49ACF}
 .block-container{max-width:1500px;padding-top:1.5rem}
 h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
 [data-testid="stMetric"]{background:#FFFFFF;border:1px solid #E7DFF0;border-radius:14px;padding:14px}
@@ -23,13 +23,13 @@ h1,h2,h3{color:#302B3D;letter-spacing:-.02em}
 .stButton>button,.stDownloadButton>button{border-radius:10px;border:1px solid #D4C5E8;background:#FBF9FE;color:#5F4B83}
 .stButton>button[kind="primary"]{background:#7860A8;color:white;border-color:#7860A8}
 [data-testid="stTabs"] button[aria-selected="true"]{color:#7860A8;border-bottom-color:#7860A8}
-.hero{background:linear-gradient(115deg,#EEE7F8,#F1ECFA);border:1px solid #CDBBDF;border-radius:17px;padding:20px 24px;margin-bottom:16px}
+.hero{background:linear-gradient(115deg,#E5D9F1,#E8DDF3);border:1px solid #BCA6D2;border-radius:17px;padding:20px 24px;margin-bottom:16px}
 .hero p{color:#5F536F;margin:0}
 [data-testid="stAlert"]{border-radius:12px}
 
 </style>""",unsafe_allow_html=True)
 st.title('🔬 Laboratorio de Ciencia de Datos')
-st.caption('Prototipo 0.3.4 · interfaz violeta profundo')
+st.caption('Versión 0.4.1 · análisis exploratorio e inferencia estadística')
 st.markdown('<div class="hero"><h3>De los datos originales al conocimiento</h3><p>Conserva la fuente original, revisa su calidad, documenta la limpieza y analiza una copia de trabajo.</p></div>',unsafe_allow_html=True)
 
 def read_csv(raw):
@@ -307,13 +307,13 @@ with tabs[6]:
     else: st.info('No hay archivos CSV guardados por el usuario.')
     st.download_button('Exportar copia de trabajo CSV',clean.to_csv(index=False).encode('utf-8-sig'),'datos_trabajo.csv','text/csv')
     pb=io.BytesIO(); clean.to_parquet(pb,index=False); st.download_button('Exportar copia de trabajo Parquet',pb.getvalue(),'datos_trabajo.parquet','application/octet-stream')
-    report={'version':'0.3.2','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
+    report={'version':'0.4.1','fuente':active,'fecha':datetime.now().isoformat(timespec='seconds'),'filas_originales':len(original),'filas_trabajo':len(clean),'columnas':list(clean.columns),'bitacora_limpieza':st.session_state.get('clean_log',[]),'nulos_actuales':{c:int(clean[c].isna().sum()) for c in clean.columns}}
     st.download_button('Exportar informe JSON',json.dumps(report,ensure_ascii=False,indent=2).encode('utf-8'),'informe_calidad_limpieza.json','application/json')
-st.divider(); st.caption('Prototipo 0.3.4 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
+st.divider(); st.caption('Versión 0.4.1 · Análisis exploratorio. El ejemplo climático incluido es sintético, no representa mediciones observadas.')
 
 
-# ---------------- INFERENCIA ESTADÍSTICA / VERSIÓN 0.4.0 ----------------
-def render_hypothesis_module_v040():
+# ---------------- INFERENCIA ESTADÍSTICA / VERSIÓN 0.4.1 ----------------
+def render_hypothesis_module_v041(frame):
     import numpy as np
     import pandas as pd
     import streamlit as st
@@ -321,15 +321,12 @@ def render_hypothesis_module_v040():
 
     st.header("🧪 Pruebas de hipótesis")
     st.caption("Inferencia estadística sobre el conjunto de datos activo.")
-    frame = None
-    for key in ("df", "df_activo", "dataframe", "datos_df", "datos"):
-        obj = st.session_state.get(key)
-        if isinstance(obj, pd.DataFrame) and not obj.empty:
-            frame = obj
-            break
-    if frame is None:
-        st.info("Carga un archivo CSV y activa sus datos para utilizar este módulo.")
+    # La fuente única y explícita es la misma copia de trabajo `clean` que
+    # alimenta los demás módulos; no dependemos de claves de sesión inexistentes.
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        st.info("El conjunto de datos activo está vacío. Carga o selecciona un CSV.")
         return
+    st.success(f"Datos conectados correctamente: {len(frame):,} filas × {len(frame.columns)} variables.")
     nums = frame.select_dtypes(include=np.number).columns.tolist()
     cols = frame.columns.tolist()
     if not nums:
@@ -503,7 +500,98 @@ def render_hypothesis_module_v040():
 
     st.info("Verifica que la estructura de los datos corresponda al diseño del estudio. Una selección incorrecta de muestras o pares invalida la conclusión.")
 
+    st.markdown("---")
+    st.header("📐 Validación de instrumentos para pruebas piloto")
+    with st.expander("Alfa de Cronbach: consistencia interna y diagnóstico por ítem", expanded=False):
+        st.caption("Selecciona únicamente ítems que midan una misma dimensión o constructo. Se calculan casos completos para los ítems seleccionados.")
+        candidates = frame.select_dtypes(include=np.number).columns.tolist()
+        if len(candidates) < 2:
+            st.warning("Se requieren al menos dos columnas numéricas de ítems.")
+        else:
+            items = st.multiselect("Ítems del instrumento", candidates, default=candidates[:min(5, len(candidates))], key="v041_cron_items")
+            if len(items) >= 2:
+                raw_items = frame[items].apply(pd.to_numeric, errors="coerce").dropna()
+                reverse = st.multiselect("Ítems inversos que deben recodificarse", items, key="v041_cron_reverse")
+                if not raw_items.empty:
+                    low = float(raw_items.min().min()); high = float(raw_items.max().max())
+                    st.caption(f"Recodificación inversa aplicada como mínimo + máximo − respuesta. Rango detectado: {low:g} a {high:g}.")
+                    scored = raw_items.copy()
+                    for item in reverse:
+                        scored[item] = low + high - scored[item]
+                    def cronbach_alpha(data):
+                        k=data.shape[1]
+                        if k < 2 or len(data) < 2: return np.nan
+                        variances=data.var(axis=0, ddof=1)
+                        total_var=data.sum(axis=1).var(ddof=1)
+                        if not np.isfinite(total_var) or total_var <= 0: return np.nan
+                        return float(k/(k-1)*(1-variances.sum()/total_var))
+                    alpha_value=cronbach_alpha(scored)
+                    st.metric("Alfa de Cronbach", "No calculable" if not np.isfinite(alpha_value) else f"{alpha_value:.4f}")
+                    st.write(f"Casos completos: **{len(scored)}** · Ítems: **{len(items)}**")
+                    if np.isfinite(alpha_value):
+                        if alpha_value >= .90: interp="Excelente (revisar posible redundancia de ítems)."
+                        elif alpha_value >= .80: interp="Buena consistencia interna."
+                        elif alpha_value >= .70: interp="Consistencia interna aceptable en muchos usos exploratorios."
+                        elif alpha_value >= .60: interp="Consistencia cuestionable; revisar ítems y dimensionalidad."
+                        else: interp="Consistencia baja; revisar codificación, ítems y estructura del instrumento."
+                        st.write("**Interpretación orientativa:** "+interp)
+                    diag=[]
+                    total=scored.sum(axis=1)
+                    for item in items:
+                        rest=scored.drop(columns=[item]).sum(axis=1)
+                        corr=scored[item].corr(rest) if rest.nunique()>1 and scored[item].nunique()>1 else np.nan
+                        a_del=cronbach_alpha(scored.drop(columns=[item])) if len(items)>2 else np.nan
+                        diag.append({"ítem":item,"correlación ítem-total corregida":corr,"alfa si se elimina":a_del})
+                    st.dataframe(pd.DataFrame(diag),use_container_width=True)
+                    st.caption("El alfa no demuestra unidimensionalidad ni validez. La interpretación depende del propósito, número de ítems, muestra y estructura factorial; no elimines ítems solo para aumentar el coeficiente.")
+                else: st.warning("No hay filas completas para los ítems seleccionados.")
+            else: st.info("Selecciona al menos dos ítems.")
+
+    with st.expander("Escala de Likert: recodificación, frecuencias y dimensiones", expanded=False):
+        st.caption("Admite respuestas numéricas o categorías de texto. Para el análisis por dimensión, selecciona los ítems que pertenecen a cada dimensión.")
+        likert_cols=st.multiselect("Ítems Likert", frame.columns.tolist(), key="v041_likert_cols")
+        if likert_cols:
+            likert=frame[likert_cols].copy()
+            reverse_likert=st.multiselect("Preguntas inversas", likert_cols, key="v041_likert_reverse")
+            numeric_likert=True
+            for col in likert_cols:
+                converted=pd.to_numeric(likert[col],errors="coerce")
+                if converted.notna().sum()==likert[col].notna().sum(): likert[col]=converted
+                else: numeric_likert=False
+            if numeric_likert:
+                observed=pd.concat([pd.to_numeric(likert[c],errors="coerce") for c in likert_cols]).dropna()
+                lo=float(observed.min()); hi=float(observed.max())
+                if reverse_likert:
+                    st.caption(f"Las preguntas inversas se transforman con {lo:g} + {hi:g} − respuesta.")
+                    for col in reverse_likert: likert[col]=lo+hi-pd.to_numeric(likert[col],errors="coerce")
+                likert_categories=sorted(pd.unique(pd.concat([likert[c] for c in likert_cols]).dropna()))
+            else:
+                st.warning("Hay respuestas textuales. Se presentan frecuencias; para recodificar ítems inversos, conviértelos primero a una escala numérica consistente.")
+                likert_categories=sorted(pd.unique(pd.concat([likert[c].astype(str) for c in likert_cols]).dropna()))
+            freq_rows=[]
+            for col in likert_cols:
+                series=likert[col].dropna()
+                counts=series.value_counts().sort_index()
+                for category,count in counts.items():
+                    freq_rows.append({"ítem":col,"categoría":category,"frecuencia":int(count),"porcentaje":round(100*count/len(series),2) if len(series) else 0})
+            st.markdown("**Frecuencias y porcentajes por ítem**")
+            st.dataframe(pd.DataFrame(freq_rows),use_container_width=True)
+            if numeric_likert:
+                st.markdown("**Resumen por ítem**")
+                st.dataframe(likert.describe().T.rename(columns={"mean":"media","50%":"mediana","std":"desv. estándar","count":"n"}),use_container_width=True)
+                st.markdown("**Puntaje por dimensión**")
+                dimension_name=st.text_input("Nombre de la dimensión", "Dimensión 1", key="v041_dim_name")
+                dim_items=st.multiselect("Ítems que integran esta dimensión",likert_cols,default=likert_cols,key="v041_dim_items")
+                if dim_items:
+                    dimension=likert[dim_items].mean(axis=1)
+                    st.metric("Media de la dimensión",f"{dimension.mean():.3f}" if dimension.notna().any() else "No calculable")
+                    st.write(f"Casos con puntuación: {int(dimension.notna().sum())} · Ítems: {len(dim_items)} · Nombre: {dimension_name}")
+                    st.dataframe(dimension.describe().to_frame("resultado").T,use_container_width=True)
+            st.download_button("Descargar análisis Likert CSV",pd.DataFrame(freq_rows).to_csv(index=False).encode("utf-8-sig"),"analisis_likert_frecuencias.csv","text/csv",key="v041_likert_download")
+        else: st.info("Selecciona las columnas que contienen las preguntas de la escala Likert.")
+
 
 st.markdown("---")
-render_hypothesis_module_v040()
+render_hypothesis_module_v041(clean)
+st.markdown("<div style='text-align:center;padding:12px;color:#51465F;font-size:0.9rem'>Diseño: Ing. Hernán Quiroz · Laboratorio de Ciencia de Datos · Versión 0.4.1</div>",unsafe_allow_html=True)
       
