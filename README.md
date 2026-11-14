@@ -1,6 +1,6 @@
 # Laboratorio de Ciencia de Datos ” versión 0.4.1
 
-## CorrecciÃ³n principal
+## Corrección principal
 - El mÃ³dulo de inferencia recibe explÃ­citamente el mismo DataFrame `clean` que alimenta los demÃ¡s mÃ³dulos. Ya no busca claves de sesiÃ³n (`df`, `datos_df`, etc.) que no existÃ­an, causa del mensaje â€œCarga un archivo CSV y activa sus datosâ€.
 - Se muestra una confirmaciÃ³n de conexiÃ³n con el nÃºmero de filas y variables.
 
