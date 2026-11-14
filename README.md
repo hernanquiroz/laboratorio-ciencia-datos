@@ -1,25 +1,29 @@
-# Laboratorio de Ciencia de Datos version 0.4.0
+# Laboratorio de Ciencia de Datos â€” versiÃ³n 0.4.1
 
-## Cambios de presentación
-- Fondo general violeta mas profundo, en una tonalidad lavanda/plum suave.
-- Barra lateral con violeta mass marcado.
-- Paneles y tarjetas claros para conservar contraste y legibilidad.
+## CorrecciÃ³n principal
+- El mÃ³dulo de inferencia recibe explÃ­citamente el mismo DataFrame `clean` que alimenta los demÃ¡s mÃ³dulos. Ya no busca claves de sesiÃ³n (`df`, `datos_df`, etc.) que no existÃ­an, causa del mensaje â€œCarga un archivo CSV y activa sus datosâ€.
+- Se muestra una confirmaciÃ³n de conexiÃ³n con el nÃºmero de filas y variables.
 
-## Funcionalidad
-Esta actualización conserva las funciones verificadas de la versión 0.4.0:
-- Carga, biblioteca y eliminación de archivos CSV.
-- Consultas SQL con DuckDB.
-- Perfil estadístico, limpieza, correlaciones y graficos.
-- Exportación de resultados.
+## Inferencia estadÃ­stica
+Se conservan las diez pruebas: t de Student para una muestra, t de Welch para muestras independientes, t de Student pareada, ANOVA, chi-cuadrado, Pearson, Spearman, Shapiro-Wilk, Mann-Whitney U y Wilcoxon.
 
-## Actualización en GitHub
-1. Descomprime el ZIP.
-2. Reemplaza `app.py` y `README.md` en el repositorio.
-3. Conserva `requirements.txt` y la carpeta `data/`, incluidos tus CSV.
-4. Haz Commit y espera el redeploy de Streamlit.
+## Validación de instrumentos
+- Alfa de Cronbach con selecciónn de i­tems, recodificación de i­tems inversos, interpretación orientativa, correlación i­tem-total corregida y alfa al eliminar cada i­tem.
+- Escala de Likert con frecuencias, porcentajes, resumen descriptivo, recodificación inversa, puntuación media por dimensión y exportación CSV de frecuencias.
 
-Esta versión modifica unicamente la presentación visual, el texto del crédito y las etiquetas de versiónn. No cambia la lógica de administración de archivos ni las consultas SQL.
+## Se conservan
+Carga y biblioteca CSV, eliminación de archivos, limpieza y bitácora, perfil estadí­stico, correlaciones, graficos, DuckDB SQL y exportaciones CSV/Parquet/JSON.
+
+## Interfaz
+Fondo violeta más profundo y crédito visible: **Diseño: Ing. Hernán Quiroz**.
+
+## Despliegue
+1. Descomprime el ZIP y reemplaza los archivos del repositorio con esta versión.
+2. Conserva la estructura `data/` y los CSV que necesites.
+3. Verifica que `requirements.txt` está actualizado.
+4. Haz commit en GitHub y espera el redeploy de Streamlit.
+
+## Consideraciones metodológicas
+El alfa de Cronbach no prueba por­ solo la validez ni la unidimensionalidad. Los i­tems deben pertenecer a un constructo interpretable. La recodificación inversa usa mí­nimo + máximo âˆ’ respuesta y presupone que todos los i­tems comparten el mismo rango. Para el análisis Likert, la media es un resumen descriptivo; considera también frecuencias y distribución ordinal. Las pruebas de hipótesis requieren verificar sus supuestos y el diseño muestral.
 
 
-## Versión 0.4.0  Inferencia estadística
-Se incorpora un módulo de pruebas de hipótesis con t de Student (una muestra y pareadas), t de Welch (muestras independientes), ANOVA de un factor, chi-cuadrado de independencia, correlaciones de Pearson y Spearman, Shapiro-Wilk, Mann-Whitney U y Wilcoxon. Incluye nivel Î± configurable, hipótesis, estadístico, valor p, grados de libertad cuando aplican, decisión y advertencias metodológicas. Se retira el crédito de diseñoo de la interfaz.
